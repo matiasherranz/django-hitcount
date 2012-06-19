@@ -17,15 +17,8 @@ def _update_hit_count(request, hitcount):
 
     Returns True if the request was considered a Hit; returns False if not.
     '''
-    try:
-        user = request.user
-    except:
-        user = None
-
-    try:
-        session_key = request.session.session_key
-    except:
-        session_key = None
+    user = request.user
+    session_key = request.session.session_key
 
     ip = get_ip(request)
     user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
@@ -58,11 +51,12 @@ def _update_hit_count(request, hitcount):
               user_agent=request.META.get('HTTP_USER_AGENT', '')[:255],)
 
     # first, use a user's authentication to see if they made an earlier hit
-    if user and user.is_authenticated():
+    if user.is_authenticated():
         if not qs.filter(user=user, hitcount=hitcount):
             hit.user = user  # associate this hit with a user
             hit.save()
             return True
+
     # if not authenticated, see if we have a repeat session
     else:
         if session_key and \
@@ -95,7 +89,6 @@ def update_hit_count_ajax(request):
 
     See template tags for how to implement.
     '''
-
     # make sure this is an ajax request
     if not request.is_ajax():
         raise Http404()
@@ -108,6 +101,7 @@ def update_hit_count_ajax(request):
         hitcount = HitCount.objects.get(pk=hitcount_pk)
     except:
         return HttpResponseBadRequest("HitCount object_pk not working")
+
 
     result = _update_hit_count(request, hitcount)
     if result:
